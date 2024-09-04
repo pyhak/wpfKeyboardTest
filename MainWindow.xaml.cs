@@ -234,7 +234,14 @@ namespace WpfKeyboard
             //window.Focus();
 
             var tabItem = FindTabByName("Editpad", window);
-            if (tabItem == null) return;
+            if (tabItem == null)
+            {
+                OpenUrl("https://www.editpad.org/");
+                Thread.Sleep(1000);
+                tabItem = FindTabByName("Editpad", window);
+            }
+            
+
             if (!tabItem.IsSelected) tabItem.Focus();
             var textBox = FindTextBoxById("textarea__editor", window);
             if (textBox == null) return;
