@@ -1,0 +1,59 @@
+﻿<Window x:Class="WpfKeyboard.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfKeyboard"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="White">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="30"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <!-- Title bar -->
+        <Border Background="Gray" Height="30" VerticalAlignment="Top"
+                MouseLeftButtonDown="OnTitleBarMouseLeftButtonDown">
+            <DockPanel LastChildFill="False">
+                <!-- Title or MenuBar placeholder -->
+                <TextBlock Text="My Application" VerticalAlignment="Center" Margin="10,0,0,0" DockPanel.Dock="Left"/>
+
+                <!-- Minimize button -->
+                <Button Content="_" Width="30" Height="30" Click="MinimizeWindow" DockPanel.Dock="Right" Margin="0,0,40,0"/>
+
+                <!-- Close button -->
+                <Button Content="X" Width="30" Height="30" Click="CloseWindow" DockPanel.Dock="Right"/>
+            </DockPanel>
+        </Border>
+
+        <Grid Margin="0,30,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="391*"/>
+                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="5*"/>
+            </Grid.ColumnDefinitions>
+
+            <RichTextBox x:Name="textArea" Margin="0,0,259,182" TextChanged="TextArea_TextChanged">
+                <FlowDocument>
+                    <Paragraph>
+                    </Paragraph>
+                </FlowDocument>
+            </RichTextBox>
+
+            <Button Content="Google" HorizontalAlignment="Left" Margin="31,336,0,0" VerticalAlignment="Top" Height="51" Width="193" Click="Button_Click"/>
+            <Button Content="Lore ipsum" HorizontalAlignment="Left" Margin="235,336,0,0" VerticalAlignment="Top" Height="51" Width="202" Click="Button_Click_1Async"/>
+            <Button Content="Minimize" HorizontalAlignment="Left" Margin="457,336,0,0" VerticalAlignment="Top" Height="51" Width="202" Click="MinimizeToTray"/>
+            <Button Content="Browser Next tab" HorizontalAlignment="Left" Margin="31,276,0,0" VerticalAlignment="Top" Height="51" Width="193" Click="Button_Click_3"/>
+            <Button x:Name="BtnC" Content="C&#xD;&#xA;" HorizontalAlignment="Left" Margin="254,290,0,0" VerticalAlignment="Top" Height="23" Width="36" Click="BtnC_Click"/>
+            <Button x:Name="BtnG" Content="G&#xA;" HorizontalAlignment="Left" Margin="295,290,0,0" VerticalAlignment="Top" Height="23" Width="36" Click="BtnG_Click"/>
+            <Button x:Name="BtnI" Content="I&#xA;" HorizontalAlignment="Left" Margin="334,290,0,0" VerticalAlignment="Top" Height="23" Width="36" Click="BtnI_Click"/>
+        </Grid>
+    </Grid>
+</Window>
