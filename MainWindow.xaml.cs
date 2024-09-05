@@ -50,23 +50,7 @@ namespace WpfKeyboard
         private Dictionary<string, string> selected_tab = new();
         private NotifyIcon _notifyIcon;
 
-
-        private async void Button_Click_1Async(object sender, RoutedEventArgs e)
-        {
-            Random random = new Random();
-            textArea.Focus();
-            var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis vulputate, nisl nec volutpat consequatinar nec. Duis eget nulla sed justo placerat hendrerit quis vitae sem. Aliquam at libero at ex feugiat fermentum. Quisque orci dolo.";
-            foreach (char c in text)
-            {
-
-                int sleepTime = random.Next(10, 1001);
-                await Task.Delay(sleepTime);
-                textArea.AppendText(c.ToString());
-            }
-        }
-
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
+        private void SendControlTabToBroweser(object sender, RoutedEventArgs e)
         {
             var window = GetActiveWindow();
             if (window == null) return;
@@ -80,53 +64,10 @@ namespace WpfKeyboard
             Keyboard.Release(VirtualKeyShort.CONTROL);
         }
 
-
-
         private void TextArea_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
 
         }
-
-        //DEPRICATED
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            // Peatage ajastamine ja kutsuge tegevus, kui tekst ei muutu 5 sekundi jooksul
-
-            var window = FindWindow("Editpad");
-            window ??= GetActiveWindow();
-            if (window == null) return;
-            //window.Focus();
-
-            var tabItem = FindTabByName("Editpad", window);
-            if (tabItem == null)
-            {
-                OpenUrl("https://www.editpad.org/");
-                Thread.Sleep(1000);
-                tabItem = FindTabByName("Editpad", window);
-            }
-
-
-            if (!tabItem.IsSelected) tabItem.Focus();
-            var textBox = FindTextBoxById("textarea__editor", window);
-            if (textBox == null) return;
-
-            // Hankige RichTextBox-ilt FlowDocument
-            FlowDocument document = textArea.Document;
-
-            // Hankige kogu tekst FlowDocument-ilt
-            string text = new TextRange(document.ContentStart, document.ContentEnd).Text;
-
-            //textBox.Focus();
-            textBox.Text = text;
-
-
-        }
-
-
-
-        //          SendTextToTextArea("C");
-        //Keyboard.Press(VirtualKeyShort.KEY_C);
-
 
         #region helpers
         /// <summary>
@@ -139,7 +80,7 @@ namespace WpfKeyboard
             var focusedElement = window.Automation.FocusedElement();
             if (focusedElement != null)
             {
-                if (focusedElement.ControlType == FlaUI.Core.Definitions.ControlType.Edit ||
+                if (focusedElement.ControlType == ControlType.Edit ||
                     focusedElement.ControlType == FlaUI.Core.Definitions.ControlType.Document)
                 {
                     var elementName = focusedElement.Properties.Name.ValueOrDefault;
@@ -220,7 +161,7 @@ namespace WpfKeyboard
             return textBox;
         }
 
-        private TextBox? FindTextBoxById(String id, Window window)
+        private static TextBox? FindTextBoxById(String id, Window window)
         {
             var searchBox1 = window.FindFirstDescendant(cf => cf.ByAutomationId(id))?.AsTextBox();
             if (searchBox1 == null) return null;
@@ -346,7 +287,12 @@ namespace WpfKeyboard
 
         #endregion
 
-        private async void BtnStartSendText(object sender, RoutedEventArgs e)
+        private void BtnStartSendText(object sender, RoutedEventArgs e)
+        {
+            StartTypeing();
+        }
+
+        private async void StartTypeing()
         {
             sendingTextStarted = true;
 
@@ -388,36 +334,55 @@ namespace WpfKeyboard
             sendingTextStarted = false;
         }
 
+        private void SendTextToElement(string windowName, string tabName, string elementId, string text)
+        {
+            var window = FindWindow(windowName);
+            window ??= GetActiveWindow();
+            if (window == null) return;
+
+            var tabItem = FindTabByName(tabName, window);
+            if (tabItem == null)
+            {
+                OpenUrl("file:///C:/Dev/forms/WpfKeyboard/info.html"); // Kohanda vastavalt vajadusele
+                Thread.Sleep(1000);
+                tabItem = FindTabByName(tabName, window);
+            }
+
+            if (tabItem != null && !tabItem.IsSelected)
+            {
+                tabItem.Focus();
+                Thread.Sleep(200); // Ootame, kuni tabItem on fookuses
+            }
+
+            var element = FindTextBoxById(elementId, window);
+            if (element == null) return;
+
+            element.Focus();
+            Thread.Sleep(200); // Ootame, kuni element on fookuses
+
+            // Saada tekst elementile
+            SendTextToFocusedElement(text);
+        }
+
+        private void SendTextToWeb1(object sender, RoutedEventArgs e)
+        {
+            var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis vulputate, nisl nec volutpat consequatinar nec. Duis eget nulla sed justo placerat hendrerit quis vitae sem. Aliquam at libero at ex feugiat fermentum. Quisque orci dolo.";
+            SendTextToElement("Infosüsteem", "Infosüsteem", "input1", text);
+        }
+
+        private static void SendTextToFocusedElement(string text)
+        {
+            foreach (char c in text)
+            {
+                Thread.Sleep(50); // Väike viivitus iga tähe vahel
+                Keyboard.Type(c);
+            }
+        }
+
+        private void SendTextToWebTextarea(object sender, RoutedEventArgs e)
+        {
+            var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis vulputate, nisl nec volutpat consequatinar nec. Duis eget nulla sed justo placerat hendrerit quis vitae sem. Aliquam at libero at ex feugiat fermentum. Quisque orci dolo.";
+            SendTextToElement("Infosüsteem", "Infosüsteem", "textarea1", text);
+        }
     }
 }
-
-
-/*
-            var ips = new InputSimulator();
-            Thread.Sleep(1200);
-            //ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.TAB);
-            //ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.F1);
-            //ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_C);
-            //ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_E);
-            string url = "http://www.google.com";
-            //Process.Start(new ProcessStartInfo("cmd", $"/c start microsoft-edge:"+url) { CreateNoWindow = true });
-            OpenUrl(url);
-            Thread.Sleep(1200);
-            ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_H);
-            ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_E);
-            ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_L);
-            ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_L);
-            ips.Keyboard.KeyPress(WindowsInput.Native.VirtualKeyCode.VK_O);
-            Thread.Sleep(1200);
-            ips.Keyboard.ModifiedKeyStroke(
-                WindowsInput.Native.VirtualKeyCode.RCONTROL,
-                WindowsInput.Native.VirtualKeyCode.TAB);
-            ips.Keyboard.ModifiedKeyStroke(
-                WindowsInput.Native.VirtualKeyCode.RCONTROL,
-                WindowsInput.Native.VirtualKeyCode.TAB);
-            ips.Keyboard.ModifiedKeyStroke(
-                WindowsInput.Native.VirtualKeyCode.RCONTROL,
-                WindowsInput.Native.VirtualKeyCode.TAB);
-            
-            textArea.AppendText("Sended tab");
-            */
