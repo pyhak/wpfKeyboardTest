@@ -134,19 +134,39 @@ namespace WpfKeyboard
         /// </summary>
         /// <param name="window"></param>
         /// <returns></returns>
-        private static bool FieldIsActive(Window window)
+        private static bool IsTextInputActive(Window window)
         {
-            using var automation = new UIA3Automation();
-            var focusedElement = automation.FocusedElement();
-
+            var focusedElement = window.Automation.FocusedElement();
             if (focusedElement != null)
             {
-                // Kontrolli, kas fookuses olev element on tekstiväli (nt TextBox, RichTextBox jne)
-                return (focusedElement.ControlType == ControlType.Edit ||
-                    focusedElement.ControlType == ControlType.Document);
+                if (focusedElement.ControlType == FlaUI.Core.Definitions.ControlType.Edit ||
+                    focusedElement.ControlType == FlaUI.Core.Definitions.ControlType.Document)
+                {
+                    var elementName = focusedElement.Properties.Name.ValueOrDefault;
+                    if (!string.IsNullOrEmpty(elementName) && elementName.Contains("Address"))
+                    {
+                        return false;
+                    }
+
+                    var controlType = focusedElement.Properties.LocalizedControlType;
+                    if (controlType.Value == "edit" || controlType.Value == "document")
+                    {
+                        return true;
+                    }
+                }
+
+                if (focusedElement.ControlType == FlaUI.Core.Definitions.ControlType.Document)
+                {
+                    var controlType = focusedElement.Properties.ClassName;
+                    if (controlType.Value == "RichTextBox")
+                    {
+                        return true;
+                    }
+                }
             }
             return false;
         }
+
 
         private static Window? GetActiveWindow()
         {
@@ -330,44 +350,47 @@ namespace WpfKeyboard
         {
             sendingTextStarted = true;
 
-            // Tekst, mida soovid saata
             var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis vulputate, nisl nec volutpat consequatinar nec. Duis eget nulla sed justo placerat hendrerit quis vitae sem. Aliquam at libero at ex feugiat fermentum. Quisque orci dolo.";
 
-            // Kasutame ühte Random objekti
-            Random random = new();
+            Random random = new Random();
 
-            // Kontrollime akna esmakordselt
             var window = GetActiveWindow();
             if (window == null) return;
 
-            // Loome tähemärkide saatmise tsükli
-            while (sendingTextStarted)
+            foreach (char c in text)
             {
-                foreach (char c in text)
+                // Kontrollime igal sammul, kas peaksime peatuma
+                if (!sendingTextStarted) return;
+
+                int sleepTime = random.Next(10, 1001);
+                await Task.Delay(sleepTime);
+
+                // Kontrollime akent uuesti
+                var currentWindow = GetActiveWindow();
+                if (currentWindow == null) return;
+
+                // Kontrollime, kas tekstiväli on aktiivne
+                bool isTextInputActive = IsTextInputActive(currentWindow);
+
+                // Uuendame Tuli.Fill ainult siis, kui olek muutub
+                Tuli.Fill = isTextInputActive ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Red);
+
+                if (isTextInputActive)
                 {
-                    int sleepTime = random.Next(10, 1001);
-                    await Task.Delay(sleepTime);
-
-                    var currentWindow = GetActiveWindow();
-                    if (currentWindow == null) return;
-
-                    bool isFieldActive = FieldIsActive(currentWindow);
-                    window = currentWindow;
-
-                    // Kui väli on aktiivne, saadame tähemärgi
-                    if (isFieldActive)
-                    {
-                        Keyboard.Type(c);
-                    }
+                    // Saadame ainult siis, kui fookus on tekstikastil
+                    Keyboard.Type(c);
                 }
-                sendingTextStarted = false;
             }
+
+            // Kui tekst on täielikult saadetud, peatame tsükli
+            sendingTextStarted = false;
         }
 
         private void BtnStopSendText(object sender, RoutedEventArgs e)
         {
             sendingTextStarted = false;
         }
+
     }
 }
 
