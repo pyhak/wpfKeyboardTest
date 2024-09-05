@@ -372,9 +372,6 @@ namespace WpfKeyboard
                 // Kontrollime, kas tekstiväli on aktiivne
                 bool isTextInputActive = IsTextInputActive(currentWindow);
 
-                // Uuendame Tuli.Fill ainult siis, kui olek muutub
-                Tuli.Fill = isTextInputActive ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Red);
-
                 if (isTextInputActive)
                 {
                     // Saadame ainult siis, kui fookus on tekstikastil

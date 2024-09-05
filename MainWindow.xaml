@@ -50,7 +50,6 @@
             <Button Content="Minimize" HorizontalAlignment="Left" Margin="457,336,0,0" VerticalAlignment="Top" Height="51" Width="202" Click="MinimizeToTray"/>
             <Button Content="Browser Next tab" HorizontalAlignment="Left" Margin="23,336,0,0" VerticalAlignment="Top" Height="51" Width="193" Click="Button_Click_3"/>
             <Button Content="Stop sending text" HorizontalAlignment="Left" Margin="558,45,0,0" VerticalAlignment="Top" Height="31" Width="134" Click="BtnStopSendText" RenderTransformOrigin="0.159,0.818"/>
-            <Rectangle x:Name="Tuli" HorizontalAlignment="Left" Height="41" Margin="579,169,0,0" Stroke="Black" VerticalAlignment="Top" Width="46" Fill="#FFC7C7C7"/>
         </Grid>
     </Grid>
 </Window>
