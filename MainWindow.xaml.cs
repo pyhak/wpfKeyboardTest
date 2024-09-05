@@ -8,7 +8,7 @@ using System.Windows;
 using FlaUI.Core.Input;
 using Keyboard = FlaUI.Core.Input.Keyboard;
 using Window = FlaUI.Core.AutomationElements.Window;
-using System.Windows.Forms; 
+using System.Windows.Forms;
 using System.Drawing;
 using TextBox = FlaUI.Core.AutomationElements.TextBox;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
@@ -17,6 +17,8 @@ using System.Windows.Threading;
 using System.Windows.Controls;
 using TabItem = FlaUI.Core.AutomationElements.TabItem;
 using System.Windows.Input;
+using System;
+using System.Windows.Media;
 
 namespace WpfKeyboard
 {
@@ -28,7 +30,7 @@ namespace WpfKeyboard
         public MainWindow()
         {
             InitializeComponent();
-            InitializeTimer();
+
 
             _notifyIcon = new NotifyIcon
             {
@@ -43,53 +45,122 @@ namespace WpfKeyboard
             _notifyIcon.DoubleClick += RestoreWindow;
         }
 
-        private bool _textStarted = false;
+        private bool sendingTextStarted = false;
+
         private Dictionary<string, string> selected_tab = new();
         private NotifyIcon _notifyIcon;
-        private DispatcherTimer _timer;
-        private const int DelayMilliseconds = 5000; // 5 sekundit
 
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            var mainWindow = FindWindow("google");
-            mainWindow ??= GetActiveWindow();
-
-            var tabItem = FindTabByName("google", mainWindow);
-            if (tabItem == null) return;
-
-            tabItem.Focus();
-            var textBox = FindTextBoxById("APjFqb", mainWindow);
-            if (textBox == null) return;
-
-            textBox.Focus();
-            textBox.Enter("Hello world");
-        }
-
- 
 
         private async void Button_Click_1Async(object sender, RoutedEventArgs e)
         {
             Random random = new Random();
             textArea.Focus();
             var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis vulputate, nisl nec volutpat consequatinar nec. Duis eget nulla sed justo placerat hendrerit quis vitae sem. Aliquam at libero at ex feugiat fermentum. Quisque orci dolo.";
-            foreach(char c in text) {
-                
+            foreach (char c in text)
+            {
+
                 int sleepTime = random.Next(10, 1001);
                 await Task.Delay(sleepTime);
                 textArea.AppendText(c.ToString());
-            }           
+            }
         }
 
-        private static FlaUI.Core.AutomationElements.Window? GetActiveWindow()
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            var window = GetActiveWindow();
+            if (window == null) return;
+
+            window.Focus();
+
+            // Saatke Ctrl + Tab, et vahetada vahekaarti
+            Keyboard.Press(VirtualKeyShort.CONTROL);
+            Keyboard.Press(VirtualKeyShort.TAB);
+            Keyboard.Release(VirtualKeyShort.TAB);
+            Keyboard.Release(VirtualKeyShort.CONTROL);
+        }
+
+
+
+        private void TextArea_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+
+        }
+
+        //DEPRICATED
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            // Peatage ajastamine ja kutsuge tegevus, kui tekst ei muutu 5 sekundi jooksul
+
+            var window = FindWindow("Editpad");
+            window ??= GetActiveWindow();
+            if (window == null) return;
+            //window.Focus();
+
+            var tabItem = FindTabByName("Editpad", window);
+            if (tabItem == null)
+            {
+                OpenUrl("https://www.editpad.org/");
+                Thread.Sleep(1000);
+                tabItem = FindTabByName("Editpad", window);
+            }
+
+
+            if (!tabItem.IsSelected) tabItem.Focus();
+            var textBox = FindTextBoxById("textarea__editor", window);
+            if (textBox == null) return;
+
+            // Hankige RichTextBox-ilt FlowDocument
+            FlowDocument document = textArea.Document;
+
+            // Hankige kogu tekst FlowDocument-ilt
+            string text = new TextRange(document.ContentStart, document.ContentEnd).Text;
+
+            //textBox.Focus();
+            textBox.Text = text;
+
+
+        }
+
+
+
+        //          SendTextToTextArea("C");
+        //Keyboard.Press(VirtualKeyShort.KEY_C);
+
+
+        #region helpers
+        /// <summary>
+        /// Check if there's an active field to send texts
+        /// </summary>
+        /// <param name="window"></param>
+        /// <returns></returns>
+        private static bool FieldIsActive(Window window)
+        {
+            using var automation = new UIA3Automation();
+            var focusedElement = automation.FocusedElement();
+
+            if (focusedElement != null)
+            {
+                // Kontrolli, kas fookuses olev element on tekstiväli (nt TextBox, RichTextBox jne)
+                return (focusedElement.ControlType == ControlType.Edit ||
+                    focusedElement.ControlType == ControlType.Document);
+            }
+            return false;
+        }
+
+        private static Window? GetActiveWindow()
         {
             using var automation = new UIA3Automation();
 
             var edgeWindows = automation.GetDesktop().FindAllChildren(cf => cf.ByClassName("Chrome_WidgetWin_1"));
-            var activeWindow = edgeWindows.FirstOrDefault().AsWindow();
+            var activeWindow = edgeWindows.FirstOrDefault()?.AsWindow();
             return activeWindow;
         }
-
+        /// <summary>
+        /// Find edge windo by name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         private static Window? FindWindow(string name)
         {
             using var automation = new UIA3Automation();
@@ -121,7 +192,7 @@ namespace WpfKeyboard
 
             var tab = FindTabByName(name, mainWindow);
             if (tab == null) return null;
-            
+
             tab.Select();
             var textBox = mainWindow.FindFirstDescendant(cf => cf.ByName(name)).AsTextBox();
             if (textBox == null) return null;
@@ -131,47 +202,34 @@ namespace WpfKeyboard
 
         private TextBox? FindTextBoxById(String id, Window window)
         {
-            var searchBox1 = window.FindFirstDescendant(cf => cf.ByAutomationId(id))?.AsTextBox(); 
+            var searchBox1 = window.FindFirstDescendant(cf => cf.ByAutomationId(id))?.AsTextBox();
             if (searchBox1 == null) return null;
 
             return searchBox1;
         }
 
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void SendTextToTextArea(string input)
         {
-            var mainWindow = GetActiveWindow();
-            var tabItem = FindTabByName("google", mainWindow);
-            if (tabItem == null) return;
+            TextPointer caretPosition = textArea.CaretPosition;
 
-                    // Otsime lehelt otsinguvälja
-                    //var searchBox = mainWindow.FindFirstDescendant(cf => cf.ByName("q"))?.AsTextBox();
-                    var searchBox1 = mainWindow.FindFirstDescendant(cf => cf.ByControlType(ControlType.ComboBox))?.AsTextBox();
-                    //var searchBox2 = mainWindow.FindFirstDescendant(cf => cf.ByClassName("gLFyf"))?.AsTextBox();
+            // Liigume kursori kohta, mis vastab algharu algusele (näiteks rea algusesse)
+            caretPosition = caretPosition.GetInsertionPosition(LogicalDirection.Forward);
 
-                    if (searchBox1 != null)
-                    {
-                        // Sisestame teksti otsinguväljale
-                        searchBox1.Enter("Hello, world!!!");
-                        
-                        // Simuleerime Enter-klahvi, kui soovime otsingu käivitada
-                        // Keyboard.Press(VirtualKeyShort.ENTER);
+            // Leidke kaugus dokumendi algusest
+            int cursorOffset = new TextRange(textArea.Document.ContentStart, caretPosition).Text.Length;
+            Console.WriteLine($"Kursor asub indeksil: {cursorOffset}");
 
-                        Console.WriteLine($"Tekst sisestatud vahekaardile: {tabItem.Name}");
-                    }
-                }
+            // Näiteks, kui tahad kursori asukoha teada ja sisestada teksti just sinna:
+            textArea.CaretPosition = caretPosition;
+            textArea.CaretPosition.InsertTextInRun(input);
+            textArea.Focus();
+            var nextPosition = caretPosition.GetNextInsertionPosition(LogicalDirection.Forward);
 
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            var window = GetActiveWindow();
-            if (window == null) return;
-
-            window.Focus();
-
-            // Saatke Ctrl + Tab, et vahetada vahekaarti
-            Keyboard.Press(VirtualKeyShort.CONTROL);
-            Keyboard.Press(VirtualKeyShort.TAB);
-            Keyboard.Release(VirtualKeyShort.TAB);
-            Keyboard.Release(VirtualKeyShort.CONTROL);
+            if (nextPosition != null)
+            {
+                textArea.CaretPosition = nextPosition;
+            }
+            textArea.Focus();
         }
 
         private void OpenUrl(string url)
@@ -203,102 +261,7 @@ namespace WpfKeyboard
             }
         }
 
-        private void InitializeTimer()
-        {
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(DelayMilliseconds)
-            };
-            _timer.Tick += Timer_Tick;
-        }
-
-        private void TextArea_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            if (_timer == null || textArea == null)
-            {
-                return;
-            }
-
-            _timer.Stop();
-            _timer.Start();
-        }
-
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            // Peatage ajastamine ja kutsuge tegevus, kui tekst ei muutu 5 sekundi jooksul
-            _timer.Stop();
-
-            var window = FindWindow("Editpad");
-            window ??= GetActiveWindow();
-            if (window == null) return;
-            //window.Focus();
-
-            var tabItem = FindTabByName("Editpad", window);
-            if (tabItem == null)
-            {
-                OpenUrl("https://www.editpad.org/");
-                Thread.Sleep(1000);
-                tabItem = FindTabByName("Editpad", window);
-            }
-            
-
-            if (!tabItem.IsSelected) tabItem.Focus();
-            var textBox = FindTextBoxById("textarea__editor", window);
-            if (textBox == null) return;
-
-            // Hankige RichTextBox-ilt FlowDocument
-            FlowDocument document = textArea.Document;
-
-            // Hankige kogu tekst FlowDocument-ilt
-            string text = new TextRange(document.ContentStart, document.ContentEnd).Text;
-
-            //textBox.Focus();
-            textBox.Text = text;
-            
-
-        }
-
-        private void SendTextToTextArea(string input)
-        {
-            TextPointer caretPosition = textArea.CaretPosition;
-
-            // Liigume kursori kohta, mis vastab algharu algusele (näiteks rea algusesse)
-            caretPosition = caretPosition.GetInsertionPosition(LogicalDirection.Forward);
-
-            // Leidke kaugus dokumendi algusest
-            int cursorOffset = new TextRange(textArea.Document.ContentStart, caretPosition).Text.Length;
-            Console.WriteLine($"Kursor asub indeksil: {cursorOffset}");
-
-            // Näiteks, kui tahad kursori asukoha teada ja sisestada teksti just sinna:
-            textArea.CaretPosition = caretPosition;
-            textArea.CaretPosition.InsertTextInRun(input);
-            textArea.Focus();
-            var nextPosition = caretPosition.GetNextInsertionPosition(LogicalDirection.Forward);
-
-            if (nextPosition != null)
-            {
-                textArea.CaretPosition = nextPosition;
-            }
-            textArea.Focus();
-        }
-
-        private void BtnC_Click(object sender, RoutedEventArgs e)
-        {
-            SendTextToTextArea("C");
-            //Keyboard.Press(VirtualKeyShort.KEY_C);
-        }
-
-        private void BtnG_Click(object sender, RoutedEventArgs e)
-        {
-            SendTextToTextArea("G");
-            //Keyboard.Press(VirtualKeyShort.KEY_G);
-        }
-
-        private void BtnI_Click(object sender, RoutedEventArgs e)
-        {
-            SendTextToTextArea("I");
-            //Keyboard.Press(VirtualKeyShort.KEY_I);
-        }
+        #endregion helpers
 
         #region menubar
 
@@ -353,12 +316,57 @@ namespace WpfKeyboard
         {
             this.Close();
         }
-        #endregion
 
         private void MinimizeToTray(object sender, RoutedEventArgs e)
         {
             this.Hide();
             _notifyIcon.Visible = true;
+        }
+
+
+        #endregion
+
+        private async void BtnStartSendText(object sender, RoutedEventArgs e)
+        {
+            sendingTextStarted = true;
+
+            // Tekst, mida soovid saata
+            var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis vulputate, nisl nec volutpat consequatinar nec. Duis eget nulla sed justo placerat hendrerit quis vitae sem. Aliquam at libero at ex feugiat fermentum. Quisque orci dolo.";
+
+            // Kasutame ühte Random objekti
+            Random random = new();
+
+            // Kontrollime akna esmakordselt
+            var window = GetActiveWindow();
+            if (window == null) return;
+
+            // Loome tähemärkide saatmise tsükli
+            while (sendingTextStarted)
+            {
+                foreach (char c in text)
+                {
+                    int sleepTime = random.Next(10, 1001);
+                    await Task.Delay(sleepTime);
+
+                    var currentWindow = GetActiveWindow();
+                    if (currentWindow == null) return;
+
+                    bool isFieldActive = FieldIsActive(currentWindow);
+                    window = currentWindow;
+
+                    // Kui väli on aktiivne, saadame tähemärgi
+                    if (isFieldActive)
+                    {
+                        Keyboard.Type(c);
+                    }
+                }
+                sendingTextStarted = false;
+            }
+        }
+
+        private void BtnStopSendText(object sender, RoutedEventArgs e)
+        {
+            sendingTextStarted = false;
         }
     }
 }
